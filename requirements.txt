@@ -1,4 +1,8 @@
-librosa
+essentia
 muda
 numpy
 pandas
+jupyter
+scipy
+matplotlib
+librosa
