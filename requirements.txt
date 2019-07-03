@@ -1,0 +1,4 @@
+librosa
+muda
+numpy
+pandas
