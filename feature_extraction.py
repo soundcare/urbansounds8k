@@ -27,3 +27,20 @@ def extract_log_mel_spectrogram(samples,sample_rate,n_mels=128,n_fft=1024,
     feature_set = np.array(feature_set)
     feature_set = np.mean(feature_set,axis=0)
     return feature_set
+
+
+def extract_frame_sequences_of_size_x(spectrogram, desired_shape_x):
+    """
+    Given a spectrogram (as a two dimentional numpy array), extract
+    as many smaller versions of the spectrogram as possible given the desired
+    shape
+    """
+    shape_y, shape_x = spectrogram.shape
+    n_shifts = max(shape_x-desired_shape_x,0)
+    if n_shifts:
+        results = []
+        for idx_x in range(n_shifts):
+            end_x = idx_x + shape_x
+            results.append(spectrogram[:,idx_x:idx_x+desired_shape_x])
+        return results
+    return [spectrogram]
