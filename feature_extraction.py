@@ -1,5 +1,6 @@
 import numpy as np
 import librosa
+import random
 
 def extract_log_mel_spectrogram(samples,sample_rate,n_mels=128,n_fft=1024,
         hop_length = 512):
@@ -29,7 +30,8 @@ def extract_log_mel_spectrogram(samples,sample_rate,n_mels=128,n_fft=1024,
     return feature_set
 
 
-def extract_frame_sequences_of_size_x(spectrogram, desired_shape_x):
+def extract_frame_sequences_of_size_x(spectrogram, desired_shape_x,
+                                    random_sample_pct = None):
     """
     Given a spectrogram (as a two dimentional numpy array), extract
     as many smaller versions of the spectrogram as possible given the desired
@@ -37,9 +39,16 @@ def extract_frame_sequences_of_size_x(spectrogram, desired_shape_x):
     """
     shape_y, shape_x = spectrogram.shape
     n_shifts = max(shape_x-desired_shape_x,0)
-    if n_shifts:
+    possible_starting_points = range(n_shifts)
+    if random_sample_pct:
+        starting_points = random.sample(possible_starting_points,
+                            int(random_sample_pct*len(possible_starting_points))
+                            )
+    else:
+        starting_points = possible_starting_points
+    if len(starting_points):
         results = []
-        for idx_x in range(n_shifts):
+        for idx_x in starting_points:
             end_x = idx_x + shape_x
             results.append(spectrogram[:,idx_x:idx_x+desired_shape_x])
         return results

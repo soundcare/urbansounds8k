@@ -23,7 +23,8 @@ def _load_audio_file(filename,desired_sample_rate = 44100):
 
 def _extract_frequency_for_sample(row_tuple,
                     desired_frame_size = 128,
-                    desired_sample_rate=44100):
+                    desired_sample_rate=44100,
+                    random_sample_pct=0.3):
     index = row_tuple[0]
     row = row_tuple[1]
     if not os.path.exists('{}spectrograms_{}_array/fold{}'.format(
@@ -64,7 +65,9 @@ def _extract_frequency_for_sample(row_tuple,
                                                 n_fft=1024)
     #get continuous spectrograms for desired frame size
     standardized_spectrograms = \
-        feature_extraction.extract_frame_sequences_of_size_x(spectrogram, desired_frame_size)
+        feature_extraction.extract_frame_sequences_of_size_x(spectrogram,
+                        desired_frame_size,
+                        random_sample_pct = random_sample_pct)
     #save files
     for l_idx, spc in enumerate(standardized_spectrograms):
         _name = '{}spectrograms_{}_array/fold{}/{}/{}_shift_{}.json'.format(urban_sounds_folder,
