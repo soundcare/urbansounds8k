@@ -31,7 +31,8 @@ def extract_log_mel_spectrogram(samples,sample_rate,n_mels=128,n_fft=1024,
 
 
 def extract_frame_sequences_of_size_x(spectrogram, desired_shape_x,
-                                    random_sample_pct = None):
+                                    random_sample_pct = None,
+                                    max_samples = None):
     """
     Given a spectrogram (as a two dimentional numpy array), extract
     as many smaller versions of the spectrogram as possible given the desired
@@ -46,6 +47,9 @@ def extract_frame_sequences_of_size_x(spectrogram, desired_shape_x,
                             )
     else:
         starting_points = possible_starting_points
+    if max_samples:
+        starting_points = random.sample(starting_points, min(max_samples,
+                                    len(starting_points)))
     if len(starting_points):
         results = []
         for idx_x in starting_points:
