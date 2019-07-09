@@ -24,7 +24,7 @@ def _load_audio_file(filename,desired_sample_rate = 44100):
 def _extract_frequency_for_sample(row_tuple,
                     desired_frame_size = 128,
                     desired_sample_rate=44100,
-                    random_sample_pct=0.3):
+                    random_sample_pct=0.2):
     index = row_tuple[0]
     row = row_tuple[1]
     if not os.path.exists('{}spectrograms_{}_array/fold{}'.format(
@@ -90,7 +90,7 @@ def extract_frequency_representation(urban_sounds_folder,
                     desired_sample_rate=44100):
     metadata = pd.read_csv(metadata_location)
     relevant_observations = metadata[start_row or 0:end_row or len(metadata)]
-    with Pool(20) as thread_pool:
+    with Pool(32) as thread_pool:
         thread_pool.map(_extract_frequency_for_sample,
                         relevant_observations.iterrows())
 
