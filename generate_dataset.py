@@ -57,32 +57,34 @@ def _extract_frequency_for_sample(row_tuple,
     audio_file_name = "{}audio/fold{}/{}".format(urban_sounds_folder,
                                                 row['fold'],
                                                 row['slice_file_name'])
-
-    audio = _load_audio_file(audio_file_name,desired_sample_rate=desired_sample_rate)
-    # get spectrogram
-    spectrogram = feature_extraction.extract_log_mel_spectrogram(audio,
-                                                sample_rate=desired_sample_rate,
-                                                n_mels=128,
-                                                n_fft=1024)
-    #get continuous spectrograms for desired frame size
-    standardized_spectrograms = \
-        feature_extraction.extract_frame_sequences_of_size_x(spectrogram,
-                        desired_frame_size,
-                        random_sample_pct = random_sample_pct,
-                        max_samples = max_samples)
-    #save files
-    for l_idx, spc in enumerate(standardized_spectrograms):
-        _name = '{}spectrograms_{}_array/fold{}/{}/{}_shift_{}.json'.format(urban_sounds_folder,
+    try:
+        audio = _load_audio_file(audio_file_name,desired_sample_rate=desired_sample_rate)
+        # get spectrogram
+        spectrogram = feature_extraction.extract_log_mel_spectrogram(audio,
+                                                    sample_rate=desired_sample_rate,
+                                                    n_mels=128,
+                                                    n_fft=1024)
+        #get continuous spectrograms for desired frame size
+        standardized_spectrograms = \
+            feature_extraction.extract_frame_sequences_of_size_x(spectrogram,
                             desired_frame_size,
-                            row['fold'],
-                            row['class'],
-                            row['slice_file_name'],
-                            l_idx)
-        with open(_name, 'w') as fp:
-            json.dump(spc.tolist(), fp)
-    print("Saved {} spectrograms for file in index {}".format(
-                                len(standardized_spectrograms),
-                                index))
+                            random_sample_pct = random_sample_pct,
+                            max_samples = max_samples)
+        #save files
+        for l_idx, spc in enumerate(standardized_spectrograms):
+            _name = '{}spectrograms_{}_array/fold{}/{}/{}_shift_{}.json'.format(urban_sounds_folder,
+                                desired_frame_size,
+                                row['fold'],
+                                row['class'],
+                                row['slice_file_name'],
+                                l_idx)
+            with open(_name, 'w') as fp:
+                json.dump(spc.tolist(), fp)
+        print("Saved {} spectrograms for file in index {}".format(
+                                    len(standardized_spectrograms),
+                                    index))
+    except Exception as e:
+        print("Error with file on index {}".format(index))
 
 def extract_frequency_representation(urban_sounds_folder,
                     metadata_location,
@@ -92,7 +94,7 @@ def extract_frequency_representation(urban_sounds_folder,
                     desired_sample_rate=44100):
     metadata = pd.read_csv(metadata_location)
     relevant_observations = metadata[start_row or 0:end_row or len(metadata)]
-    with Pool(32) as thread_pool:
+    with Pool(64) as thread_pool:
         thread_pool.map(_extract_frequency_for_sample,
                         relevant_observations.iterrows())
 
