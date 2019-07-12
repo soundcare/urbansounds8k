@@ -6,6 +6,7 @@ array as well as images
 import feature_extraction
 import pandas as pd
 import essentia
+import numpy as np
 # as there are 2 operating modes in essentia which have the same algorithms,
 # these latter are dispatched into 2 submodules:
 import essentia.standard
@@ -72,19 +73,19 @@ def _extract_frequency_for_sample(row_tuple,
                             max_samples = max_samples)
         #save files
         for l_idx, spc in enumerate(standardized_spectrograms):
-            _name = '{}spectrograms_{}_array/fold{}/{}/{}_shift_{}.json'.format(urban_sounds_folder,
+            _name = '{}spectrograms_{}_array/fold{}/{}/{}_shift_{}'.format(urban_sounds_folder,
                                 desired_frame_size,
                                 row['fold'],
                                 row['class'],
                                 row['slice_file_name'],
                                 l_idx)
-            with open(_name, 'w') as fp:
-                json.dump(spc.tolist(), fp)
+            np.save(_name,spc)
         print("Saved {} spectrograms for file in index {}".format(
                                     len(standardized_spectrograms),
                                     index))
+        return (index,"{}.npy".format(_name))
     except Exception as e:
-        print("Error with file on index {}".format(index))
+        print("Error with file on index {}: {}".format(index, e))
 
 def extract_frequency_representation(urban_sounds_folder,
                     metadata_location,
@@ -95,8 +96,16 @@ def extract_frequency_representation(urban_sounds_folder,
     metadata = pd.read_csv(metadata_location)
     relevant_observations = metadata[start_row or 0:end_row or len(metadata)]
     with Pool(64) as thread_pool:
-        thread_pool.map(_extract_frequency_for_sample,
+        idx_location = thread_pool.map(_extract_frequency_for_sample,
                         relevant_observations.iterrows())
+        location_map = \
+            pd.DataFrame(idx_location,columns=["file_id","location"])
+        relevant_observations= \
+            relevant_observations.join(location_map.set_index('file_id'))
+        relevant_observations. \
+            to_csv("{}spectrograms_{}_array/location_mapping.csv". \
+                format(urban_sounds_folder,desired_frame_size))
+
 
 if __name__ == "__main__":
     arg = sys.argv[1]
