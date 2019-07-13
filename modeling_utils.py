@@ -65,4 +65,5 @@ class NumpyDataGenerator(keras.utils.Sequence):
             x[i,] = np.load(self.id_to_file_mapping[id])
             # Store class
             y[i] = self.labels[id]
+
         return x, keras.utils.to_categorical(y, num_classes=self.n_classes)

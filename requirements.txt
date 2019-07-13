@@ -1,3 +1,4 @@
+tensorflow
 essentia
 muda
 numpy
@@ -7,3 +8,4 @@ scipy
 matplotlib
 librosa
 keras
+jupyterlab

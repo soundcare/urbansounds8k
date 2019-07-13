@@ -8,8 +8,7 @@ from modeling_utils import DataGenerator
 
 # Parameters
 
-def train_model(metadata,
-                file_locations,
+def train_model(metadata_location,
                 model_architecture = None,
                 data_dim=(128,128),
                 batch_size=64,
