@@ -13,7 +13,6 @@ def train_model(metadata_location,
                 data_dim=(128,128),
                 batch_size=64,
                 n_classes=10,
-                n_channels=1,
                 shuffle=False):
     """
     """

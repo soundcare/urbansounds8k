@@ -16,7 +16,6 @@ class NumpyDataGenerator(keras.utils.Sequence):
                     id_to_file_mapping,
                     batch_size=32,
                     dim=(128,128),
-                    n_channels=1,
                     n_classes=10,
                     shuffle=True):
         """Initialization"""
@@ -24,7 +23,6 @@ class NumpyDataGenerator(keras.utils.Sequence):
         self.batch_size = batch_size
         self.labels = labels
         self.list_ids = list_ids
-        self.n_channels = n_channels
         self.n_classes = n_classes
         self.shuffle = shuffle
         self.id_to_file_mapping = id_to_file_mapping
@@ -44,7 +42,6 @@ class NumpyDataGenerator(keras.utils.Sequence):
 
         # Generate data
         X, y = self.__data_generation(list_ids_temp)
-
         return X, y
 
     def on_epoch_end(self):
@@ -56,14 +53,19 @@ class NumpyDataGenerator(keras.utils.Sequence):
     def __data_generation(self, list_ids_temp):
         """Generates data containing batch_size samples"""
         # Initialization
-        x = np.empty((self.batch_size, *self.dim, self.n_channels))
+        x = np.empty((self.batch_size, *self.dim))
         y = np.empty((self.batch_size), dtype=int)
 
         # Generate data
         for i, id in enumerate(list_ids_temp):
             # Store sample
-            x[i,] = np.load(self.id_to_file_mapping[id])
+            _data = np.load(self.id_to_file_mapping[id])[:self.dim[0],:self.dim[1]]
+            #only need to pad over the y axis
+            y_pad_size = self.dim[1]-_data.shape[1]
+            if y_pad_size > 0:
+                _data = np.pad(_data, ((0,0),(0,y_pad_size)), 'constant')
+            x[i,] = _data
             # Store class
-            y[i] = self.labels[id]
+            y[i] = self.labels[i]
 
         return x, keras.utils.to_categorical(y, num_classes=self.n_classes)
