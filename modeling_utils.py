@@ -48,7 +48,7 @@ class NumpyDataGenerator(keras.utils.Sequence):
         """Updates indexes after each epoch"""
         self.indexes = np.arange(len(self.list_ids))
         if self.shuffle == True:
-            np.random.shuffle(self.indexes)
+            self.indexes = np.random.shuffle(self.indexes)
 
     def __data_generation(self, list_ids_temp):
         """Generates data containing batch_size samples"""
