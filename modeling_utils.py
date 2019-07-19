@@ -14,6 +14,7 @@ class NumpyDataGenerator(keras.utils.Sequence):
                     list_IDs,
                     labels,
                     id_to_file_mapping,
+                    file_base_location,
                     batch_size=32,
                     dim=(128,128),
                     n_classes=10,
@@ -24,6 +25,7 @@ class NumpyDataGenerator(keras.utils.Sequence):
         self.batch_size = batch_size
         self.labels = labels
         self.id_to_file_mapping = id_to_file_mapping
+        self.file_base_location = file_base_location
         self.list_IDs = list_IDs
         self.n_channels = n_channels
         self.n_classes = n_classes
@@ -38,13 +40,10 @@ class NumpyDataGenerator(keras.utils.Sequence):
         'Generate one batch of data'
         # Generate indexes of the batch
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
-
         # Find list of IDs
         list_IDs_temp = [self.list_IDs[k] for k in indexes]
-
         # Generate data
         X, y = self.__data_generation(list_IDs_temp)
-
         return X, y
 
     def on_epoch_end(self):
@@ -61,12 +60,12 @@ class NumpyDataGenerator(keras.utils.Sequence):
         # Generate data
         for i, id in enumerate(list_IDs_temp):
             # Store sample
-            _data = np.load(self.id_to_file_mapping[id])[:self.dim[0],:self.dim[1]]
+            _data = np.load(self.file_base_location+self.id_to_file_mapping[id])[:self.dim[0],:self.dim[1]]
             #only need to pad over the y axis
             y_pad_size = self.dim[1]-_data.shape[1]
             if y_pad_size > 0:
                 _data = np.pad(_data, ((0,0),(0,y_pad_size)), 'constant')
-            X[i,] = np.expand_dims(_data, axis=2) 
+            X[i] = np.expand_dims(_data, axis=2)
             # Store class
             y[i] = self.labels[id]
 
