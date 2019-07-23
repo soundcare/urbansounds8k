@@ -68,7 +68,7 @@ def generate_img_from_npy(row_tuple):
                                             )
     fig = plt.figure()
     ax = plt.Axes(fig, [0., 0., 1., 1.])
-    ax.imshow(spectrogram.T, aspect = 'equal', origin='lower', interpolation='none', cmap='magma',filternorm=False)
+    ax.imshow(spectrogram, aspect = 'equal', origin='lower', interpolation='none', cmap='magma',filternorm=False)
     ax.set_axis_off()
     fig.add_axes(ax)
     plt.savefig("{}".format(filename),bbox_inches='tight')
