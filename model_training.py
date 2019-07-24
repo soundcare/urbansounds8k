@@ -43,7 +43,7 @@ def generate_generator_multiple(generator,directories, batch_size, img_height,im
 
 def train_model_from_png(file_base_location,
                         validation_fold = 1,
-                        batch_size = 128,
+                        batch_size = 32,
                         img_height=128,
                         img_width = 128,
                         approx_fold_size = 8000,
@@ -90,7 +90,7 @@ def train_model_from_png(file_base_location,
     # Compile model
     model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.01), metrics=['accuracy'])
     print(model.summary())
-    filepath="./keras_checkpoints/png-weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
+    filepath="./keras_checkpoints/png-fold{}-weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5".format(validation_fold)
     checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
     callbacks_list = [checkpoint]
     model.fit_generator(train_generator,
@@ -98,8 +98,8 @@ def train_model_from_png(file_base_location,
                               epochs=1,
                               validation_data = test_generator,
                               validation_steps=approx_fold_size/batch_size,
-                              use_multiprocessing=True,
-                              workers=6,
+                              #use_multiprocessing=True,
+                              #workers=6,
                               shuffle=True,
                               callbacks = callbacks_list,
                               verbose=True)
@@ -163,8 +163,8 @@ def train_model_from_npy(metadata_location,
     callbacks_list = [checkpoint]
     model.fit_generator(generator=training_generator,
                         validation_data=validation_generator,
-                        use_multiprocessing=True,
-                        workers=6,
+                        #use_multiprocessing=True,
+                        #workers=6,
                         verbose=1,
                         steps_per_epoch=steps_per_epoch,
                         validation_steps=validation_steps,

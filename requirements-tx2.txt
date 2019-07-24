@@ -1,0 +1,10 @@
+essentia
+muda
+numpy
+pandas
+jupyter
+scipy
+matplotlib
+librosa
+keras
+jupyterlab
