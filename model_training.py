@@ -95,7 +95,7 @@ def train_model_from_png(file_base_location,
     callbacks_list = [checkpoint]
     model.fit_generator(train_generator,
                               steps_per_epoch=approx_fold_size*9/batch_size,
-                              epochs=1,
+                              epochs=40,
                               validation_data = test_generator,
                               validation_steps=approx_fold_size/batch_size,
                               #use_multiprocessing=True,
