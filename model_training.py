@@ -90,7 +90,7 @@ def train_model_from_png(file_base_location,
     # Compile model
     model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.01), metrics=['accuracy'])
     print(model.summary())
-    filepath="./keras_checkpoints/png-fold{}-weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5".format(validation_fold)
+    filepath="./keras_checkpoints/png-fold{}".format(validation_fold)+"-weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
     checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
     callbacks_list = [checkpoint]
     model.fit_generator(train_generator,
