@@ -11,7 +11,101 @@ from keras.optimizers import Adam
 from modeling_utils import NumpyDataGenerator
 import sys
 
-def train_model(metadata_location,
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+sess = tf.Session(config=config)
+set_session(sess)
+
+from keras.preprocessing.image import ImageDataGenerator
+import matplotlib.pyplot as plt
+import json
+from PIL import Image, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+
+def generate_generator_multiple(generator,directories, batch_size, img_height,img_width):
+    generators =[]
+    for directory in directories:
+        gen = generator.flow_from_directory(directory,
+                                          target_size = (img_height,img_width),
+                                          class_mode = 'categorical',
+                                          batch_size = batch_size,
+                                          shuffle=True,
+                                          seed=7)
+
+        generators.append(gen)
+
+    for gen in generators:
+        for data, labels in gen:
+            yield data, labels
+
+def train_model_from_png(file_base_location,
+                        validation_fold = 1,
+                        batch_size = 128,
+                        img_height=128,
+                        img_width = 128,
+                        approx_fold_size = 8000,
+                        nclass = 10):
+    fold_directories = []
+    for i in range(1,11):
+        directory = file_base_location+"/fold"+str(i)
+        fold_directories.append(directory)
+    datagen = ImageDataGenerator(rescale=1./255)
+    testdatagen = ImageDataGenerator(rescale=1./255)
+    directory=fold_directories[validation_fold-1]
+    train_directories = list(set(fold_directories) - set([directory]))
+    test_directories = [directory]
+    print("Running fold {}, holding data from {} and training on the remaining {}" \
+          .format(validation_fold,directory,len(train_directories)))
+
+    input_shape = (img_height, img_width,3)
+
+    #generators:
+    train_generator = generate_generator_multiple(generator=datagen,
+                                           directories = train_directories,
+                                           batch_size=batch_size,
+                                           img_height=img_height,
+                                           img_width=img_width)
+    test_generator = generate_generator_multiple(generator=testdatagen,
+                                   directories = test_directories,
+                                   batch_size=batch_size,
+                                   img_height=img_height,
+                                   img_width=img_width)
+    model = Sequential()
+    model.add(Conv2D(24, (5,5),
+                        data_format='channels_last',
+                        activation='relu',input_shape=(img_height,img_width,3)))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(48, (5,5),activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(48, (5,5),activation='relu'))
+    model.add(Flatten())
+    model.add(Dropout(0.5))
+    model.add(Dense(64, activation='relu',
+                   kernel_regularizer=regularizers.l2(0.001)))
+    model.add(Dense(10, activation='softmax',
+                   kernel_regularizer=regularizers.l2(0.001)))
+    # Compile model
+    model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.01), metrics=['accuracy'])
+    print(model.summary())
+    filepath="./keras_checkpoints/png-weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
+    checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    callbacks_list = [checkpoint]
+    model.fit_generator(train_generator,
+                              steps_per_epoch=approx_fold_size*9/batch_size,
+                              epochs=1,
+                              validation_data = test_generator,
+                              validation_steps=approx_fold_size/batch_size,
+                              use_multiprocessing=True,
+                              workers=6,
+                              shuffle=True,
+                              callbacks = callbacks_list,
+                              verbose=True)
+
+
+def train_model_from_npy(metadata_location,
                 file_base_location,
                 model_architecture=None,
                 data_dim=(128,128),
@@ -92,6 +186,11 @@ def train_model(metadata_location,
     print(np.unique(np.array(test_data['classID']), return_counts=True))
 
 if __name__ == "__main__":
-    metadata_location = sys.argv[1]
-    file_base_location = sys.argv[2]
-    train_model(metadata_location, file_base_location)
+    model_run = sys.argv[1]
+    if model_run == "npy":
+        metadata_location = sys.argv[2]
+        file_base_location = sys.argv[3]
+        train_model_from_npy(metadata_location, file_base_location)
+    elif model_run == "png":
+        base_location = sys.argv[2]
+        train_model_from_png(base_location)
