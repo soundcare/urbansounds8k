@@ -1,6 +1,13 @@
 """
 Model definition and script
 """
+from keras.layers import Dense, Activation, Flatten, Dropout, BatchNormalization
+from keras.models import Sequential, Model
+from keras.layers import Conv2D, MaxPooling2D
+from keras import regularizers, optimizers
+from keras import layers
+from keras import models
+from keras.layers.advanced_activations import LeakyReLU
 import numpy as np
 import pandas as pd
 from keras.models import Sequential
@@ -10,7 +17,9 @@ from keras import regularizers
 from keras.optimizers import Adam
 from modeling_utils import NumpyDataGenerator
 import sys
-
+#from tensorflow import keras
+#from tensorflow.keras import optimizers
+from keras import optimizers
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
@@ -34,6 +43,8 @@ def generate_generator_multiple(generator,directories, batch_size, img_height,im
                                           batch_size = batch_size,
                                           shuffle=True,
                                           seed=7)
+        
+        #print(gen.class_indices)
 
         generators.append(gen)
 
@@ -42,8 +53,124 @@ def generate_generator_multiple(generator,directories, batch_size, img_height,im
             yield data, labels
 
 def train_model_from_png(file_base_location,
-                        validation_fold = 1,
+                        validation_fold = 7,
                         batch_size = 32,
+                        img_height=128,
+                        img_width = 128,
+                        approx_fold_size = 8000,
+                        nclass = 10):
+    fold_directories = []
+    for i in range(1,11):
+        directory = file_base_location+"/fold"+str(i)
+        fold_directories.append(directory)
+    datagen = ImageDataGenerator(rescale=1./255)
+    testdatagen = ImageDataGenerator(rescale=1./255)
+    directory=fold_directories[validation_fold-1]
+    train_directories = fold_directories[:1]#[3] #list(set(fold_directories) - set([directory]))
+    test_directories = [directory]
+    print("Running fold {}, holding data from {} and training on the remaining {}" \
+          .format(validation_fold,directory,len(train_directories)))
+
+    input_shape = (img_height, img_width,3)
+
+    #generators:
+    """train_generator = generate_generator_multiple(generator=datagen,
+                                           directories = train_directories,
+                                           batch_size=batch_size,
+                                           img_height=img_height,
+                                           img_width=img_width)
+    test_generator = generate_generator_multiple(generator=testdatagen,
+                                   directories = test_directories,
+                                   batch_size=batch_size,
+                                   img_height=img_height,
+                                   img_width=img_width)
+    """
+    train_generator = datagen.flow_from_directory(train_directories[0],
+                                          target_size = (img_height,img_width),
+                                          class_mode = 'categorical',
+                                          batch_size = batch_size,
+                                          shuffle=True,
+                                          seed=7)
+
+    test_generator = datagen.flow_from_directory(directory,
+                                          target_size = (img_height,img_width),
+                                          class_mode = 'categorical',
+                                          batch_size = batch_size,
+                                          shuffle=True,
+                                          seed=7)
+
+
+
+
+
+    
+    model = Sequential()
+    model.add(Conv2D(32, (3, 3), padding='same',
+                 input_shape=(img_height,img_width,3)))
+    model.add(Activation('relu'))
+    model.add(Conv2D(64, (3, 3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
+    model.add(Conv2D(64, (3, 3), padding='same'))
+    model.add(Activation('relu'))
+    model.add(Conv2D(64, (3, 3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.5))
+    model.add(Conv2D(128, (3, 3), padding='same'))
+    model.add(Activation('relu'))
+    model.add(Conv2D(128, (3, 3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.5))
+    model.add(Flatten())
+    model.add(Dense(512))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(10, activation='softmax'))
+    model.compile(optimizers.rmsprop(lr=0.0005, decay=1e-3),loss="categorical_crossentropy",metrics=["accuracy"])
+
+    """
+    model = Sequential()
+    model.add(Conv2D(24, (5,5),
+                        data_format='channels_last',
+                        activation='relu',input_shape=(img_height,img_width,3)))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(48, (5,5),activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(48, (5,5),activation='relu'))
+    model.add(Flatten())
+    model.add(Dropout(0.5))
+    model.add(Dense(64, activation='relu',
+                   kernel_regularizer=regularizers.l2(0.001)))
+    model.add(Dense(10, activation='softmax',
+                   kernel_regularizer=regularizers.l2(0.001)))
+    # Compile model
+    #model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.01), metrics=['accuracy'])
+    opt = optimizers.RMSprop(lr=0.0001,decay=1e-3)
+    model.compile(loss='categorical_crossentropy', 
+                  optimizer=opt,
+                  metrics=['accuracy'])
+    """
+    print(model.summary())
+    filepath="./keras_checkpoints/png-fold{}".format(validation_fold)+"-weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
+    checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    callbacks_list = [checkpoint]
+    model.fit_generator(train_generator,
+                              steps_per_epoch=approx_fold_size*9//batch_size,
+                              epochs=15,
+                              validation_data = test_generator,
+                              validation_steps=approx_fold_size/batch_size,
+                              #use_multiprocessing=True,
+                              #workers=6,
+                              #shuffle=True,
+                              callbacks = callbacks_list,
+                              verbose=True)
+
+def train_model_from_png_vgg(file_base_location,
+                        validation_fold = 1,
+                        batch_size = 64,
                         img_height=128,
                         img_width = 128,
                         approx_fold_size = 8000,
@@ -73,29 +200,31 @@ def train_model_from_png(file_base_location,
                                    batch_size=batch_size,
                                    img_height=img_height,
                                    img_width=img_width)
-    model = Sequential()
-    model.add(Conv2D(24, (5,5),
-                        data_format='channels_last',
-                        activation='relu',input_shape=(img_height,img_width,3)))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(48, (5,5),activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(48, (5,5),activation='relu'))
-    model.add(Flatten())
-    model.add(Dropout(0.5))
-    model.add(Dense(64, activation='relu',
-                   kernel_regularizer=regularizers.l2(0.001)))
-    model.add(Dense(10, activation='softmax',
-                   kernel_regularizer=regularizers.l2(0.001)))
-    # Compile model
-    model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.01), metrics=['accuracy'])
+    #model 
+    base_model = keras.applications.vgg16.VGG16(weights='imagenet', 
+                                include_top=False, 
+                                input_shape=(img_height, img_width,3))
+    for layer in base_model.layers[:15]:
+        layer.trainable = False
+    model = keras.models.Sequential()
+    model.add(base_model)
+    model.add(keras.layers.GlobalAveragePooling2D())
+    model.add(keras.layers.Dense(512,activation='relu'))
+    model.add(keras.layers.Dense(64,activation='relu'))
+    model.add(keras.layers.Dense(32,activation='relu'))
+    model.add(keras.layers.Dropout(0.5))
+    model.add(keras.layers.Dense(nclass, activation='softmax'))
+    opt = optimizers.RMSprop(lr=0.0001,decay=1e-3)
+    model.compile(loss='categorical_crossentropy', 
+                  optimizer=opt,
+                  metrics=['accuracy'])
     print(model.summary())
     filepath="./keras_checkpoints/png-fold{}".format(validation_fold)+"-weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
     checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
     callbacks_list = [checkpoint]
     model.fit_generator(train_generator,
                               steps_per_epoch=approx_fold_size*9/batch_size,
-                              epochs=40,
+                              epochs=100,
                               validation_data = test_generator,
                               validation_steps=approx_fold_size/batch_size,
                               #use_multiprocessing=True,
@@ -152,13 +281,13 @@ def train_model_from_npy(metadata_location,
         model.add(Dense(10, activation='softmax',
                        kernel_regularizer=regularizers.l2(0.001)))
         # Compile model
-        model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.01), metrics=['accuracy'])
+        model.compile(loss='categorical_crossentropy', optimizer=optimizers.rmsprop(lr=0.0005, decay=1e-3), metrics=['accuracy'])
     print(model.summary())
     # Train model on dataset
     steps_per_epoch = np.ceil(len(metadata) / batch_size)
     validation_steps = np.ceil(len(list(test_data['classID']))/batch_size)
     # checkpoint
-    filepath="./keras_checkpoints/weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
+    filepath="./keras_checkpoints/npy-weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
     checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
     callbacks_list = [checkpoint]
     model.fit_generator(generator=training_generator,
@@ -168,7 +297,7 @@ def train_model_from_npy(metadata_location,
                         verbose=1,
                         steps_per_epoch=steps_per_epoch,
                         validation_steps=validation_steps,
-                        epochs=1,
+                        epochs=10,
                         callbacks=callbacks_list,
                         shuffle=True
                        )
