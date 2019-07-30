@@ -202,18 +202,6 @@ def train_model_from_npy(metadata_location,
                         callbacks=callbacks_list,
                         shuffle=True
                        )
-    #Validate
-    validation_generator_2 = NumpyDataGenerator(list(test_data['fsID']),labels, id_to_file_mapping,file_base_location, **params)
-
-    predictions = model.predict_generator(validation_generator_2,
-                                      steps = validation_steps,
-                                      verbose=True)
-    y_pred = np.argmax(predictions, axis=1)
-    print('Confusion Matrix')
-    cm = confusion_matrix(list(test_data['classID']), y_pred[:len(list(test_data['classID']))])
-    print(cm)
-    print(np.unique(np.array(y_pred), return_counts=True))
-    print(np.unique(np.array(test_data['classID']), return_counts=True))
 
 
 def train_npy_all_folds(metadata_location,
@@ -222,7 +210,8 @@ def train_npy_all_folds(metadata_location,
                 data_dim=(128,128),
                 batch_size=64,
                 n_classes=10,
-                shuffle=True):
+                shuffle=True,
+                epochs=20):
     for i in range(1,11):
         validation_folds = [i]
         training_folds = set([i for i in range(1,11)]) - set(validation_folds)
@@ -234,7 +223,8 @@ def train_npy_all_folds(metadata_location,
                         n_classes=n_classes,
                         training_folds = training_folds,
                         validation_folds = validation_folds,
-                        shuffle=True)
+                        shuffle=True,
+                        epochs=epochs)
 
 
 
