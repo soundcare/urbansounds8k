@@ -223,9 +223,9 @@ def train_npy_all_folds(metadata_location,
                 batch_size=64,
                 n_classes=10,
                 shuffle=True):
-    for i in range(1,10):
+    for i in range(1,11):
         validation_folds = [i]
-        training_folds = set([i for i in range(1,10)]) - set(validation_folds)
+        training_folds = set([i for i in range(1,11)]) - set(validation_folds)
         train_model_from_npy(metadata_location,
                         file_base_location,
                         model_architecture=model_architecture,
