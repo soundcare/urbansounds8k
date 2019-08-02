@@ -48,8 +48,8 @@ def train_model_from_png(metadata,
                         batch_size = 128,
                         img_height=128,
                         img_width = 128,
-                        approx_fold_size = 8000,
-                        nclass = 10):
+                        n_classes = 10,
+                        epochs=10):
     # Datasets
     data_dim  = (img_height,img_width)
     metadata = pd.read_csv(metadata_location)
@@ -85,16 +85,21 @@ def train_model_from_png(metadata,
                         data_format='channels_last',
                         activation='relu',input_shape=(img_height,img_width,3)))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(48, (5,5),activation='relu'))
+    model.add(Conv2D(64, (5, 5),activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(48, (5,5),activation='relu'))
-    model.add(Flatten())
+    model.add(Dropout(0.25))
+    model.add(Conv2D(64, (3, 3), padding='same',activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.5))
-    model.add(Dense(64, activation='relu',
-                   kernel_regularizer=regularizers.l2(0.001)))
-    model.add(Dense(10, activation='softmax',
-                   kernel_regularizer=regularizers.l2(0.001)))
-    # Compile model
+    model.add(Conv2D(128, (3, 3), padding='same',activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(128, (3, 3),activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.5))
+    model.add(Flatten())
+    model.add(Dense(512,activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(n_classes, activation='softmax'))
     model.compile(optimizers.rmsprop(lr=0.0005, decay=1e-3),loss="categorical_crossentropy",metrics=["accuracy"])
     print(model.summary())
     filepath="./keras_checkpoints/png-weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
@@ -107,7 +112,8 @@ def train_model_from_png(metadata,
                         validation_data=validation_generator,
                         verbose=1,
                         steps_per_epoch=steps_per_epoch,
-                        validation_steps=validation_steps
+                        validation_steps=validation_steps,
+                        epochs=epochs
                         )
 
 
@@ -183,6 +189,7 @@ def train_model_from_npy(metadata_location,
         model.add(Dropout(0.5))
         model.add(Dense(n_classes, activation='softmax'))
         model.compile(optimizers.rmsprop(lr=0.0005, decay=1e-3),loss="categorical_crossentropy",metrics=["accuracy"])
+
     print(model.summary())
     # Train model on dataset
     steps_per_epoch = np.ceil(len(metadata) / batch_size)
@@ -227,6 +234,22 @@ def train_npy_all_folds(metadata_location,
                         epochs=epochs)
 
 
+def train_png_all_folds(metadata_location,
+                file_base_location,
+                batch_size=64,
+                n_classes=10,
+                shuffle=True,
+                epochs=20):
+    for i in range(1,11):
+        validation_folds = [i]
+        training_folds = set([i for i in range(1,11)]) - set(validation_folds)
+        train_model_from_png(metadata_location,
+                        file_base_location,
+                        batch_size=batch_size,
+                        training_folds = training_folds,
+                        validation_folds = validation_folds,
+                        epochs=epochs)
+
 
 
 if __name__ == "__main__":
@@ -239,6 +262,10 @@ if __name__ == "__main__":
         metadata_location = sys.argv[2]
         file_base_location = sys.argv[3]
         train_npy_all_folds(metadata_location, file_base_location)
+    elif model_run == "png_all_folds":
+        metadata_location = sys.argv[2]
+        file_base_location = sys.argv[3]
+        train_png_all_folds(metadata_location, file_base_location)
     elif model_run == "png":
         metadata_location = sys.argv[2]
         file_base_location = sys.argv[3]
