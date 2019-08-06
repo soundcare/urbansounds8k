@@ -2,11 +2,13 @@
 Exploring research done by Justin Salamon and Juan Pablo Bello on https://arxiv.org/abs/1608.04363
 
 ## Next Steps:
-  - The generator is broken, has to do with the list_ids and indexing for sure
-  - Create function to extract the 3 second frames from the spectrogram array (128x128) shape arrays
-    - Follow paper instructions. Take as many as possible by shifting one frame at a time
-  - Store that data in a manageable format, no need to be an image per se, a json array suffices
-  - Start documenting methodology in a notion page
+  - Document everything in a gitbook page or notion page (even github.io pages)
+  - Try adding additional spectral features and test results
+  - Try recommended data augmentation approach (or use newer dataset)
+  
+## Achieved:
+  - Replicated (close enough) baseline results
+  - NPY representation of the data as good as using PNG, so will use that for smaller footprint
 
 ## Environment
 
