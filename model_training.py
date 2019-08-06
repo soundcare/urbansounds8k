@@ -73,7 +73,7 @@ def train_model_from_png(metadata,
                                                     directory=file_base_location,
                                                     x_col="location_png",
                                                     y_col="class_name",
-                                                    subset="validation",
+                                                    subset="training",
                                                     batch_size=batch_size,
                                                     seed=42,
                                                     shuffle=True,
@@ -102,7 +102,7 @@ def train_model_from_png(metadata,
     model.add(Dense(n_classes, activation='softmax'))
     model.compile(optimizers.rmsprop(lr=0.0005, decay=1e-3),loss="categorical_crossentropy",metrics=["accuracy"])
     print(model.summary())
-    filepath="./keras_checkpoints/png-weights-improvement-{epoch:02d}-{val_acc:.2f}.hdf5"
+    filepath="./keras_checkpoints/png-weights-improvement-validationfold{}-".format("-".join([str(x) for x in validation_folds]))+"{epoch:02d}-{val_acc:.2f}.hdf5"
     checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
     callbacks_list = [checkpoint]
 
@@ -110,11 +110,15 @@ def train_model_from_png(metadata,
     validation_steps = len(list(test_data['classID'])) // batch_size
     model.fit_generator(generator=training_generator,
                         validation_data=validation_generator,
+                        #use_multiprocessing=True,
+                        #workers=6,
                         verbose=1,
                         steps_per_epoch=steps_per_epoch,
                         validation_steps=validation_steps,
-                        epochs=epochs
-                        )
+                        epochs=epochs,
+                        callbacks=callbacks_list,
+                        shuffle=True
+                       )
 
 
 def train_model_from_npy(metadata_location,
